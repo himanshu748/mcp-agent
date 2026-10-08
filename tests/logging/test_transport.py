@@ -161,7 +161,10 @@ async def test_cancellation_does_not_lose_a_ready_event():
 
     await asyncio.wait_for(wait_until_idle(bus), timeout=1)
     await bus.emit(Event(type="info", namespace="test", message="during cancellation"))
-    # Queue.get is scheduled before cancellation reaches the processing task.
+    # Let Queue.get dequeue the event before cancelling its parent worker.
+    await asyncio.sleep(0)
+    assert bus._queue.empty()
+    assert listener.messages == []
     bus._task.cancel()
     await bus._task
     await bus.stop()
